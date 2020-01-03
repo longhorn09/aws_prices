@@ -1,0 +1,19 @@
+{
+  "name": "aws_prices",
+  "version": "1.0.0",
+  "description": "For purposes of fetching AWS pricing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longhorn09/aws_prices.git"
+  },
+  "author": "Norman Tang <norman@normstorm.com> (https://www.linkedin.com/in/normstorm/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/longhorn09/aws_prices/issues"
+  },
+  "homepage": "https://github.com/longhorn09/aws_prices#readme"
+}
