@@ -11,6 +11,7 @@ from dateutil.relativedelta import relativedelta    # pip3 install python-dateut
 #########################################################################################
 
 class AWSPricing:
+    ROOT_URL = 'https://pricing.us-east-1.amazonaws.com'
     def __init__(self):
         super().__init__()
     
@@ -21,21 +22,95 @@ class AWSPricing:
     # first check the offer index file to get the paths to the savings plan index Url
     #######################################################################
     def getOfferIndexURL(self):
+        retvalue = None
         url = None
         contents = None
         myJSON = None
+
         url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
         contents  = urllib.request.urlopen(url).read() 
         myJSON = json.loads(contents)
-        print(myJSON["offers"]["AmazonEC2"]["savingsPlanVersionIndexUrl"])
-        print(myJSON["offers"]["AmazonEC2"]["currentSavingsPlanIndexUrl"])
+        retvalue = (myJSON["offers"]["AmazonEC2"]["currentSavingsPlanIndexUrl"]).strip()    #ie. https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json
+
+        #print(retvalue)
+        return retvalue
+
+    #######################################################################
+    # simple case statement for region lookup
+    # if missing code, append to the elif and submit pull request
+    #######################################################################
+    def getAWSRegionFromCode(self, pArg1):
+        retvalue = None
+        if pArg1 == 'CMH':  # Columbus, OH
+            retvalue = 'us-east-2'                
+        elif pArg1 == "DUB":    # Dublin, IE
+            retvalue = 'eu-west-1'
+        elif pArg1 == "FRA":    # Frankfurt, GR
+            retvalue = 'eu-central-1'
+        elif pArg1 == "GRU":    # Sao Paulo, BR
+            retvalue = 'sa-east-1'    
+        elif pArg1 == "IAD":
+            retvalue = "us-east-1"
+        elif pArg1 == "LHR":
+            retvalue = 'eu-west-2'
+        elif pArg1 == "NRT":    
+            retvalue = 'ap-northeast-1'
+        elif pArg1 == "PDX":
+            retvalue = 'us-west-2'
+        elif pArg1 == "SIN":
+            retvalue = 'ap-southeast-1'
+        elif pArg1 == "SYD":
+            retvalue = 'ap-southeast-2'        
+        return retvalue
+
+    #######################################################################
+    # URL lookup for region SP version  Url
+    #######################################################################
+    def getSavingsPlanPriceListForRegion(self, pArg1, pArg2):
+        url = None 
+        contents = None
+        myJSON = None
+        retvalue = None
+        versionUrlPath = None
+
+        regionId = self.getAWSRegionFromCode(pArg1) # convert 3 letter airport code IAD to 'us-east-1'        
+        url = self.ROOT_URL + pArg2        
+        contents  = urllib.request.urlopen(url).read() 
+        myJSON = json.loads(contents)
+
+        for x in range(len(myJSON["regions"])):
+            print(str(x) + ' ' + myJSON["regions"][x]["regionCode"])
+            
+            if ((myJSON["regions"][x]["regionCode"]).strip() == regionId):                
+                versionUrlPath = myJSON["regions"][x]["versionUrl"]
+                break   # get outta the for loop
+
+        
+        url = self.ROOT_URL + versionUrlPath
+        print(url)
+        contents  = urllib.request.urlopen(url).read() 
+        myJSON = json.loads(contents)
+
+        # Tenancy: Shared, Dedicated Instance, Dedicated Host
+        # 3Y all upfront
+        #     BoxUsage vs.
+        #     UnusedBox
+        # vs. DedicatedUsage
+        # vs. UnusedDed
+        
+        return retvalue
+   
 
 
 ############################################
 # MAIN CODE EXECUTION BEGIN
 ############################################
 if __name__ == '__main__':
-    #print('test')
+    regionURL = None
+    
     myObj = AWSPricing()
-    myObj.getOfferIndexURL()
-    #print("output: ",myObj.getSavingsPlanURL)
+    spURL = myObj.getOfferIndexURL()
+    
+    
+    myObj.getSavingsPlanPriceListForRegion('LHR', spURL)
+    #print(myObj.getAWSRegionFromCode('DUB'))
