@@ -79,8 +79,6 @@ class AWSPricing:
         myJSON = json.loads(contents)
 
         for x in range(len(myJSON["regions"])):
-            print(str(x) + ' ' + myJSON["regions"][x]["regionCode"])
-            
             if ((myJSON["regions"][x]["regionCode"]).strip() == regionId):                
                 versionUrlPath = myJSON["regions"][x]["versionUrl"]
                 break   # get outta the for loop
@@ -112,5 +110,5 @@ if __name__ == '__main__':
     spURL = myObj.getOfferIndexURL()
     
     
-    myObj.getSavingsPlanPriceListForRegion('LHR', spURL)
+    myObj.getSavingsPlanPriceListForRegion('IAD', spURL)
     #print(myObj.getAWSRegionFromCode('DUB'))
