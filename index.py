@@ -10,11 +10,12 @@ from operator import itemgetter, attrgetter # https://docs.python.org/3/howto/so
 
 
 class SKUClass:
-    def __init__(self,pFam,pSize, pRegionCode, pSKU):
+    def __init__(self,pFam,pSize, pRegionCode, pSKU, pOS):
         self.instanceFamily = pFam
         self.instanceSize = pSize
         self.regionCode = pRegionCode
         self.sku = pSKU
+        self.os = pOS
         #self.
     
 #########################################################################################
@@ -120,17 +121,10 @@ class AWSPricing:
 
         
         url = self.ROOT_URL + versionUrlPath
-        print(url)
-        contents  = urllib.request.urlopen(url).read() 
-        myJSON = json.loads(contents)
+        retvalue = url#print(url)
+        #contents  = urllib.request.urlopen(url).read() 
+        #myJSON = json.loads(contents)
 
-        # Tenancy: Shared, Dedicated Instance, Dedicated Host
-        # 3Y all upfront
-        #     BoxUsage (regular OD) vs.
-        #     UnusedBox
-        # vs. DedicatedUsage
-        # vs. UnusedDed
-        
         return retvalue
    
     #######################################################################
@@ -142,50 +136,56 @@ class AWSPricing:
         instanceType = None
         my_list = []
 
-        pattern = "^(.+)\.([0-9A-Za-z]+)"
-        with open('index_aws_ec2.json') as json_file:
+
+        # this is a massive 1.4 GB file - may take time
+        with open('index_aws_ec2.json') as json_file: 
             myJSON = json.load(json_file)   # note: json.load() for local file instead of json.loads() 
         #print(len(myJSON["products"]))
         counter = 0
-        #print(myJSON["products"])
-        #print(myJSON["products"][0]["sku"])
-        for key,value in myJSON["products"].items(): #range(len(myJSON["products"])):
+        
+        for key,value in myJSON["products"].items():    
+            pattern = "^[A-Z]+[0-9]+\-BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
             if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
-                and value["attributes"]["operatingSystem"] == "Linux" # or value["attributes"]["operatingSystem"] == "RHEL")
+                and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
                 and value["attributes"]["preInstalledSw"] == "NA"
                 and value["attributes"]["instanceFamily"] == "General purpose"
                 and value["attributes"]["locationType"] == "AWS Region"
                 and value["attributes"]["tenancy"] == "Shared"
-                and value["attributes"]["location"] == self.getAWSLocationFromCode(pRegionCode)):
+                and value["attributes"]["location"] == self.getAWSLocationFromCode(pRegionCode)
+                and re.match(pattern,value["attributes"]["usagetype"])):
 
+                pattern = "^(.+)\.([0-9A-Za-z]+)$"
                 if ("instanceType" in value["attributes"] and re.match(pattern,value["attributes"]["instanceType"])):
                     m = re.search(pattern, value["attributes"]["instanceType"])
                     #if (m.group(2) == "small"):        #not all instanceFamily have size small
                         #print (key + ": " + m.group(0))
-                    my_list.append( SKUClass(m.group(1),m.group(2)   ,pRegionCode, key         )                )
-                        #counter = counter + 1            
-                
-            #if (counter > 10):
-            #    break
-        #my_list.sort()
-        #sorted(my_list, key=lambda SKUClass: SKUClass.instanceFamily)
+                    my_list.append( SKUClass(m.group(1)
+                                            , m.group(2)   
+                                            , pRegionCode
+                                            , key  
+                                            , value["attributes"]["operatingSystem"]))
+        
         my_list = sorted(my_list, key=attrgetter('instanceFamily','instanceSize'))
         for x in range(len(my_list)):
-            print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize)
-
+            print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
+        return my_list
 
 
 ############################################
 # MAIN CODE EXECUTION BEGIN
 ############################################
 if __name__ == '__main__':
+    listArr = []
     regionURL = None
     
     myObj = AWSPricing()
     spURL = myObj.getOfferIndexURL()
     
-    
-    #myObj.getSavingsPlanPriceListForRegion('IAD', spURL)
+    listArr = myObj.getSKUListLocal("CMH")
+    #regionURL = myObj.getSavingsPlanPriceListForRegion('CMH', spURL)
+    #print(regionURL)
 
-    myObj.getSKUListLocal("LHR")
-    #print(myObj.getAWSRegionFromCode('DUB'))
+
+# generic:  "usageType" : "ComputeSP:3yrAllUpfront", , get the "sku" , ["attributes"]["location"]="Any",
+# "usageType" : "USE2-EC2SP:c4.3yrAllUpfront",  get the "sku" , also ["attributes"]["location"]="US East (Ohio)", ["attributes"]["instanceType"]="c4"
+    
