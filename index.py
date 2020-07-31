@@ -1,16 +1,25 @@
 from datetime import datetime, date,time
 from datetime import timezone       # use python3
 import re                           # for regular expression, to parse out instance size from instanceType attribute
-import calendar                     # need this module for last day of month
+#import calendar                     # need this module for last day of month
 import json                         # need this library to interact with JSON data structures
 import urllib.request               # need this library to open up remote website (ie. controltower)
 import xlsxwriter                   # pip3 install xlsxwriter   , xlwt doesn't support .xlsx
-from dateutil.relativedelta import relativedelta    # pip3 install python-dateutil
+from operator import itemgetter, attrgetter # https://docs.python.org/3/howto/sorting.html
+#from dateutil.relativedelta import relativedelta    # pip3 install python-dateutil
 
+
+class SKUClass:
+    def __init__(self,pFam,pSize, pRegionCode, pSKU):
+        self.instanceFamily = pFam
+        self.instanceSize = pSize
+        self.regionCode = pRegionCode
+        self.sku = pSKU
+        #self.
+    
 #########################################################################################
 # offer index file: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json
 #########################################################################################
-
 class AWSPricing:
     ROOT_URL = 'https://pricing.us-east-1.amazonaws.com'
     def __init__(self):
@@ -117,7 +126,7 @@ class AWSPricing:
 
         # Tenancy: Shared, Dedicated Instance, Dedicated Host
         # 3Y all upfront
-        #     BoxUsage vs.
+        #     BoxUsage (regular OD) vs.
         #     UnusedBox
         # vs. DedicatedUsage
         # vs. UnusedDed
@@ -131,6 +140,8 @@ class AWSPricing:
         myJSON = None
         counter = None
         instanceType = None
+        my_list = []
+
         pattern = "^(.+)\.([0-9A-Za-z]+)"
         with open('index_aws_ec2.json') as json_file:
             myJSON = json.load(json_file)   # note: json.load() for local file instead of json.loads() 
@@ -149,13 +160,19 @@ class AWSPricing:
 
                 if ("instanceType" in value["attributes"] and re.match(pattern,value["attributes"]["instanceType"])):
                     m = re.search(pattern, value["attributes"]["instanceType"])
-                    if (m.group(2) == "small"):
-                        print (key + ": " + m.group(0))
-                        counter = counter + 1            
+                    #if (m.group(2) == "small"):        #not all instanceFamily have size small
+                        #print (key + ": " + m.group(0))
+                    my_list.append( SKUClass(m.group(1),m.group(2)   ,pRegionCode, key         )                )
+                        #counter = counter + 1            
                 
-            if (counter > 10):
-                break
-        #for x in range(len(myJSON["products"])):
+            #if (counter > 10):
+            #    break
+        #my_list.sort()
+        #sorted(my_list, key=lambda SKUClass: SKUClass.instanceFamily)
+        my_list = sorted(my_list, key=attrgetter('instanceFamily','instanceSize'))
+        for x in range(len(my_list)):
+            print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize)
+
 
 
 ############################################
