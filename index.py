@@ -38,7 +38,11 @@ class AWSPricing:
         contents = None
         myJSON = None
 
+        
+        # simply lookup "AmazonEC2"   , then "currentSavingsPlanIndexUrl"
         url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
+
+
         contents  = urllib.request.urlopen(url).read() 
         myJSON = json.loads(contents)
         retvalue = (myJSON["offers"]["AmazonEC2"]["currentSavingsPlanIndexUrl"]).strip()    #ie. https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json
@@ -73,7 +77,7 @@ class AWSPricing:
         elif pArg1 == "SYD":
             retvalue = 'ap-southeast-2'        
         return retvalue
-#######################################################################
+    #######################################################################
     # for use with ["attributes"]["location"] in SKU JSON
     #######################################################################
     def getAWSLocationFromCode(self,pArg1):
@@ -100,9 +104,11 @@ class AWSPricing:
             retvalue = 'Asia Pacific (Sydney)'  #'ap-southeast-2'        
         return retvalue
     #######################################################################
-    # URL lookup for region SP version  Url
+    # URL lookup for region SP version Url
+    # @pArg1 - the 3 letter region to lookup (ie. the airport code)
+    # @pArg2 - URL to fetch savings plan JSON
     #######################################################################
-    def getSavingsPlanPriceListForRegion(self, pArg1, pArg2):
+    def getSavingsPlanPriceListUrlForRegion(self, pArg1, pArg2):
         url = None 
         contents = None
         myJSON = None
@@ -135,14 +141,37 @@ class AWSPricing:
         counter = None
         instanceType = None
         my_list = []
+        url = None
+        doLocal = None
+        #productSku = None        
 
+        doLocal = True  # for local development, this is faster but may be outdated. for production, set this to false
 
-        # this is a massive 1.4 GB file - may take time
-        with open('index_aws_ec2.json') as json_file: 
-            myJSON = json.load(json_file)   # note: json.load() for local file instead of json.loads() 
+        if (doLocal):
+            # this is a 1.3 GB file - may take time
+            with open('index_aws_ec2.json') as json_file: 
+                myJSON = json.load(json_file)   # note: json.load() for local file instead of json.loads() 
+        elif (doLocal == False):
+            # ["offers"]["AmazonEC2"]["currentVersionUrl"]
+            url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
+            contents  = urllib.request.urlopen(url).read() 
+            myJSON = json.loads(contents)
+            retvalue = (myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]).strip()
+
+            
         #print(len(myJSON["products"]))
         counter = 0
-        
+
+        # this loop to get the sku that corresponds with 3yr All Upfront ComputeSavingsPlan
+        #for key,value in myJSON["products"].items():    
+         #   print(value["usageType"])
+            #if (value["usageType"] == "ComputeSP:3yrAllUpfront" and value["productFamily"] == "ComputeSavingsPlans"):
+            #    productSku = value["sku"]
+            #    break
+
+
+
+
         for key,value in myJSON["products"].items():    
             pattern = "^[A-Z]+[0-9]+\-BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
             if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
@@ -151,6 +180,9 @@ class AWSPricing:
                 and value["attributes"]["instanceFamily"] == "General purpose"
                 and value["attributes"]["locationType"] == "AWS Region"
                 and value["attributes"]["tenancy"] == "Shared"
+                ###########################################################
+                # right now for development - this is CMH for pRegionCode
+                ###########################################################
                 and value["attributes"]["location"] == self.getAWSLocationFromCode(pRegionCode)
                 and re.match(pattern,value["attributes"]["usagetype"])):
 
@@ -166,10 +198,76 @@ class AWSPricing:
                                             , value["attributes"]["operatingSystem"]))
         
         my_list = sorted(my_list, key=attrgetter('instanceFamily','instanceSize'))
-        for x in range(len(my_list)):
-            print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
+        #for x in range(len(my_list)):
+        #    print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
+        #    print(productSku)
         return my_list
 
+    ##############################################################
+    # @pArg1 -  example: https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/20200806153551/us-east-2/index.json
+    # @pArg2 -  list of SKUClass
+    #    
+    #  JSON structure   - https://jsoneditoronline.org/
+    #  -products
+    #  -terms  
+    #   └savingsPlan
+    #    └ sku
+    #    └ rates
+    #      └ rateCode                   "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
+    #      └ discountedRate
+    #        └ price                    "0.0679"
+    ##############################################################
+    def getSavingsPlanPrices(self,pArg1, pArg2):
+        # BEGIN VARIABLE DECLARATION 
+        contents = None
+        url = None
+        myJSON = None
+        doLocal = None
+        # END VARIABLE DECLARATION 
+
+        doLocal = True          # set to false for production
+
+        url = pArg1
+
+        if (doLocal == False):
+            contents  = urllib.request.urlopen(url).read() 
+            myJSON = json.loads(contents)          # for production - use actual web url (slower)        
+        elif (doLocal == True):
+            with open('CMH.json') as json_file: 
+                myJSON = json.load(json_file)
+        
+        # this loop to get the sku that corresponds with 3yr All Upfront ComputeSavingsPlan
+        for item in myJSON["products"]:    
+            if (item["usageType"] == "ComputeSP:3yrAllUpfront" and item["productFamily"] == "ComputeSavingsPlans"):
+                productSku = item["sku"]
+                break
+
+        # now get the actual rates in the "terms" section of the JSON
+        for item in myJSON["terms"]["savingsPlan"]:
+            if (item["sku"] ==  productSku):
+                foundRateList = item["rates"]                    
+                break;
+
+        # find the price by rateCode - ie. "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
+        for x in range(len(pArg2)):
+            #print(pArg2[x].sku)
+            for item in foundRateList:
+                if (item['rateCode'] == productSku + '.' + pArg2[x].sku):
+                    pArg2[x].price = item['discountedRate']['price']
+                    pArg2[x].rateCode = item['rateCode']
+                    #print(item['rateCode'] + ": " + pArg2[x].price + ", " + pArg2[x].instanceFamily + ", " + pArg2[x].instanceSize+ ", " + pArg2[x].os)
+                    break
+        
+        #  write to Excel
+        for x in range(len(pArg2)):
+        
+            #print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
+            #print(productSku)
+        #for key,value in myJSON["products"].items():    
+        #    pattern = "^[A-Z]+[0-9]+\-BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
+        #    if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
+        #        and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
+        #        and value["attributes"]["preInstalledSw"] == "NA"
 
 ############################################
 # MAIN CODE EXECUTION BEGIN
@@ -181,8 +279,9 @@ if __name__ == '__main__':
     myObj = AWSPricing()
     spURL = myObj.getOfferIndexURL()
     
-    listArr = myObj.getSKUListLocal("CMH")
-    #regionURL = myObj.getSavingsPlanPriceListForRegion('CMH', spURL)
+    listArr = myObj.getSKUListLocal("CMH")      # loop thru the big 1.3GB JSON, to get the appropriate product SKUs for a region
+    regionURL = myObj.getSavingsPlanPriceListUrlForRegion('CMH', spURL)    # this just gets the appropriate savings plan url for a region
+    myObj.getSavingsPlanPrices(regionURL, listArr)
     #print(regionURL)
 
 
