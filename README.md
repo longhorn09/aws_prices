@@ -35,6 +35,26 @@ if (doLocal):
         myJSON = json.load(json_file)   
 ```
 
+
+### JSON reference snippets
+3Y Compute Savings Plan All Upfront has sku of `RQRC4CUNT9HUG9WC`  
+```
+{
+    "sku" : "RQRC4CUNT9HUG9WC",
+    "productFamily" : "ComputeSavingsPlans",
+    "serviceCode" : "ComputeSavingsPlans",
+    "usageType" : "ComputeSP:3yrAllUpfront",
+    "operation" : "",
+    "attributes" : {
+      "purchaseOption" : "All Upfront",
+      "granularity" : "hourly",
+      "purchaseTerm" : "3yr",
+      "locationType" : "AWS Region",
+      "location" : "Any"
+    }
+  }
+```
+
 ### Reference links 
 
 [AWS Bulk API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-ppslong.html)  
