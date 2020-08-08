@@ -156,12 +156,15 @@ class AWSPricing:
             myJSON = json.loads(contents)
             
         regionArr = pRegionCodeCSV.split(",")
-        yCount = 0
-        nCount = 0
+        #yCount = 0
+        #nCount = 0
         for x in range(len(regionArr)):         
             #print(regionArr[x] + ': ' + self.getAWSLocationFromCode(regionArr[x]))
             for key,value in myJSON["products"].items():    
-                pattern = "^[A-Z]+[0-9]+\-BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
+                # regex pattern for ["attributes"]["usagetype"] can be:
+                # EUW2-BoxUsage:m5d.xlarge
+                # BoxUsage:m5d.xlarge
+                pattern = "^([A-Z]+[0-9]+\-)?BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
                 if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
                     and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
                     and value["attributes"]["preInstalledSw"] == "NA"
@@ -176,12 +179,14 @@ class AWSPricing:
                         m = re.search(pattern, value["attributes"]["instanceType"])
                         #if (m.group(2) == "small"):        #not all instanceFamily have size small
                             #print (key + ": " + m.group(0))                                                
-                        print(m.group(1) + " " + m.group(1)  + " " + regionArr[x] + " " + key + " " + value["attributes"]["operatingSystem"])
+                        #print(m.group(1)  + " " + regionArr[x] + " " + key + " " + value["attributes"]["operatingSystem"])
                         my_list.append( SKUClass(m.group(1)
                                                 , m.group(2)   
                                                 , regionArr[x] #pRegionCode
                                                 , key  
                                                 , value["attributes"]["operatingSystem"]))
+                """
+                # this block of code for development debugging
                 else:
                     if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
                         and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
@@ -189,16 +194,15 @@ class AWSPricing:
                         and value["attributes"]["instanceFamily"] == "General purpose"
                         and value["attributes"]["locationType"] == "AWS Region"
                         and value["attributes"]["tenancy"] == "Shared"
-                        and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])):
-                        print("ok so far: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"])
+                        and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
+                        and re.match(pattern,value["attributes"]["usagetype"])
+                        ):
+                        print("yCount: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"] + ", usageType:" + value["attributes"]["usagetype"])
                         yCount = yCount + 1
                     else:                        
                         nCount = nCount + 1
-                        #print("nope: " + self.getAWSLocationFromCode(regionArr[x])  + "<>" +  str(value["attributes"]["location"]))
-                    #count = count + 1
-                    #if (count > 10):
-                    #    break
-        print("yep: " + str(yCount) + ", nope: " + str(nCount))
+                """    
+        #print("yep: " + str(yCount) + ", nope: " + str(nCount))
         my_list = sorted(my_list, key=attrgetter('regionCode','instanceFamily','instanceSize'))
 
         return my_list
@@ -254,7 +258,7 @@ class AWSPricing:
 
             # find the price by rateCode - ie. "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
             for x in range(len(pArg2)):
-                print("getSavingsPlanPrices2: [" + pArg2[x].regionCode + " ]: " + pArg2[x].sku + ", os: " + pArg2[x].os + ", " + pArg2[x].instanceFamily + "." + pArg2[x].instanceSize)
+                print("getSavingsPlanPrices2: [" + pArg2[x].regionCode + "]: " + pArg2[x].sku + ", os: " + pArg2[x].os + ", " + pArg2[x].instanceFamily + "." + pArg2[x].instanceSize)
                 for item in foundRateList:
                     if (item['rateCode'] == productSku + '.' + pArg2[x].sku):
                         pArg2[x].price = item['discountedRate']['price']
@@ -332,10 +336,14 @@ if __name__ == '__main__':
     listArr = []
     regionURL = None
 
-    # NEEDS WORK: DUB, PDX, SIN, IAD, GRU, NRT don't work  <-- need to figure out global prices
-    # WORKS: CMH,LHR,FRA
+    # NEEDS WORK: DUB, NRT don't work  <-- need to figure out global prices
+    
+    # WORKS with no blanks: CMH,LHR,FRA
+    # WORKS but BLANKS    : IAD,PDX,SIN,GRU,NRT  , some reason dupe blanks for Windows m1.large, m1.medium, and m1.xlarge 
+    # DOESN'T WORK        : DUB
 
-    regionsArg = "IAD"                          # comma separated list of regions by airport code 
+    regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT"
+    #regionsArg = "DUB"                          # comma separated list of regions by airport code 
     
     myObj = AWSPricing()                            # object instantiation
     
