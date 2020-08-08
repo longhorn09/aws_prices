@@ -305,8 +305,7 @@ class AWSPricing:
         counter = 2
         book = xlsxwriter.Workbook('sp_prices.xlsx')
         sheet1 = book.add_worksheet('prices')
-
-
+        
         money = book.add_format({'num_format': '#,##0.0000'})   # https://xlsxwriter.readthedocs.io/tutorial02.html
         #####################################
         # write headers in row 1
@@ -331,7 +330,7 @@ class AWSPricing:
             sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
             sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
             sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
-            sheet1.write_string('H' + str(counter), pArg1[x].price,money)
+            sheet1.write_number('H' + str(counter), float(pArg1[x].price),money)
             counter = counter + 1
 
         book.close()    # close the excel file
