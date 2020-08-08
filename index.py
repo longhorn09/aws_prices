@@ -1,5 +1,5 @@
-from datetime import datetime, date,time
-from datetime import timezone       # use python3
+#from datetime import datetime, date,time
+#from datetime import timezone       # use python3
 import re                           # for regular expression, to parse out instance size from instanceType attribute
 #import calendar                     # need this module for last day of month
 import json                         # need this library to interact with JSON data structures
