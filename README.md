@@ -37,7 +37,7 @@ if (doLocal):
 
 
 ### JSON reference snippets
-3Y Compute Savings Plan All Upfront has sku of `RQRC4CUNT9HUG9WC`  
+3Y Compute Savings Plan All Upfront has product sku of `RQRC4CUNT9HUG9WC`  
 ```
 {
     "sku" : "RQRC4CUNT9HUG9WC",
