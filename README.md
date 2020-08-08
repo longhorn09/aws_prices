@@ -13,7 +13,11 @@ python3 index.py
 ```
 
 ### Output
-Python script will create an Excel file with Savings Plan quotes and filename of `sp_prices.xlsx` in same folder where python script is run. Can easily filter or use `vlookup()` or any other excel lookup technique such as `xlookup()` or `index/match`
+Python script will create an Excel file with Savings Plan quotes and filename of 
+```
+sp_prices.xlsx
+```
+in same folder where python script is run. Can easily filter or use `vlookup()` or any other excel lookup technique such as `xlookup()` or `index/match`
 
 ![Excel screenshot](https://user-images.githubusercontent.com/11417589/89704400-28320d00-d919-11ea-87a8-5fd1e06f4b66.png)
 
