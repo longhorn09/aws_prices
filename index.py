@@ -134,28 +134,30 @@ class AWSPricing:
         instanceType = None
         my_list = []
         url = None
-        doLocal = None
-        #productSku = None        
+        doLocal = None    
 
-        doLocal = False  # True for Dev , false for Prod
+        ############################################    
+        # [FASTER, stale  ] Toggle doLocal to True if JSON already saved locally as index_aws_ec2.json, can use doSaveJSONLocal() for initial save
+        # [SLOWER, fresher] Toggle doLocal to False to pull from AWS site - this is a 1GB+ sized read
+        ############################################
+        doLocal = True  # True for Dev , false for Prod
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
             with open('index_aws_ec2.json') as json_file: 
                 myJSON = json.load(json_file)   # note: json.load() for local file instead of json.loads() 
         elif (doLocal == False):
-            # ["offers"]["AmazonEC2"]["currentVersionUrl"]
             url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
             contents  = urllib.request.urlopen(url).read() 
             myJSON = json.loads(contents)
-            #retvalue = (myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]).strip()
+            
             url = self.ROOT_URL + myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]
             contents  = urllib.request.urlopen(url).read() 
             myJSON = json.loads(contents)
             
-        #counter = 0
-
         regionArr = pRegionCodeCSV.split(",")
+        yCount = 0
+        nCount = 0
         for x in range(len(regionArr)):         
             #print(regionArr[x] + ': ' + self.getAWSLocationFromCode(regionArr[x]))
             for key,value in myJSON["products"].items():    
@@ -166,33 +168,46 @@ class AWSPricing:
                     and value["attributes"]["instanceFamily"] == "General purpose"
                     and value["attributes"]["locationType"] == "AWS Region"
                     and value["attributes"]["tenancy"] == "Shared"
-                    ###########################################################
-                    # right now for development - this is CMH for pRegionCode
-                    ###########################################################
                     and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
-                    #and value["attributes"]["location"] == self.getAWSLocationFromCode(pRegionCodeCSV)
                     and re.match(pattern,value["attributes"]["usagetype"])):
 
                     pattern = "^(.+)\.([0-9A-Za-z]+)$"
                     if ("instanceType" in value["attributes"] and re.match(pattern,value["attributes"]["instanceType"])):
                         m = re.search(pattern, value["attributes"]["instanceType"])
                         #if (m.group(2) == "small"):        #not all instanceFamily have size small
-                            #print (key + ": " + m.group(0))
+                            #print (key + ": " + m.group(0))                                                
+                        print(m.group(1) + " " + m.group(1)  + " " + regionArr[x] + " " + key + " " + value["attributes"]["operatingSystem"])
                         my_list.append( SKUClass(m.group(1)
                                                 , m.group(2)   
                                                 , regionArr[x] #pRegionCode
                                                 , key  
                                                 , value["attributes"]["operatingSystem"]))
-        
+                else:
+                    if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
+                        and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
+                        and value["attributes"]["preInstalledSw"] == "NA"
+                        and value["attributes"]["instanceFamily"] == "General purpose"
+                        and value["attributes"]["locationType"] == "AWS Region"
+                        and value["attributes"]["tenancy"] == "Shared"
+                        and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])):
+                        print("ok so far: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"])
+                        yCount = yCount + 1
+                    else:                        
+                        nCount = nCount + 1
+                        #print("nope: " + self.getAWSLocationFromCode(regionArr[x])  + "<>" +  str(value["attributes"]["location"]))
+                    #count = count + 1
+                    #if (count > 10):
+                    #    break
+        print("yep: " + str(yCount) + ", nope: " + str(nCount))
         my_list = sorted(my_list, key=attrgetter('regionCode','instanceFamily','instanceSize'))
 
         return my_list
 
-    ##############################################################
-    # this version work for a single region - used during initial development
-    # @pArg1 -  example: https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/20200806153551/us-east-2/index.json
-    # @pArg2 -  list of SKUClass
-    #    
+    ############################################################################
+    # Description: can handle multiple regions based on provided CSV list
+    # @pArg1 - this is a CSV list of regions by 3 letter airport code
+    # @pArg2 - this is the list Array of SKUClass objects
+    ############################################################################
     #  JSON structure   - https://jsoneditoronline.org/
     #  -products
     #  -terms  
@@ -202,58 +217,9 @@ class AWSPricing:
     #      └ rateCode                   "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
     #      └ discountedRate
     #        └ price                    "0.0679"
-    ##############################################################
-    def getSavingsPlanPrices(self,pArg1, pArg2):
-        # BEGIN VARIABLE DECLARATION 
-        contents = None
-        url = None
-        myJSON = None
-        doLocal = None
-        # END VARIABLE DECLARATION 
-
-        doLocal = False          # set to false for production
-
-        url = pArg1
-
-        if (doLocal == False):
-            contents  = urllib.request.urlopen(url).read() 
-            myJSON = json.loads(contents)          # for production - use actual web url (slower)        
-        elif (doLocal == True):
-            with open('CMH.json') as json_file: 
-                myJSON = json.load(json_file)
-        
-        # this loop to get the sku that corresponds with 3yr All Upfront ComputeSavingsPlan
-        for item in myJSON["products"]:    
-            if (item["usageType"] == "ComputeSP:3yrAllUpfront" and item["productFamily"] == "ComputeSavingsPlans"):
-                productSku = item["sku"]
-                break
-
-        # now get the actual rates in the "terms" section of the JSON
-        for item in myJSON["terms"]["savingsPlan"]:
-            if (item["sku"] ==  productSku):
-                foundRateList = item["rates"]                    
-                break;
-
-        # find the price by rateCode - ie. "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
-        for x in range(len(pArg2)):
-            #print(pArg2[x].sku)
-            for item in foundRateList:
-                if (item['rateCode'] == productSku + '.' + pArg2[x].sku):
-                    pArg2[x].price = item['discountedRate']['price']
-                    pArg2[x].rateCode = item['rateCode']
-                    #print(item['rateCode'] + ": " + pArg2[x].price + ", " + pArg2[x].instanceFamily + ", " + pArg2[x].instanceSize+ ", " + pArg2[x].os)
-                    break
-        return pArg2
-
-    ############################################################################
-    # new version to take on multiple regions
-    # @pArg1 
-    # @pArg2 this is the list Array of SKUClass objects
     ############################################################################
     def getSavingsPlanPrices2(self,pArg1, pArg2):
-        # BEGIN VARIABLE DECLARATION 
         contents = None
-        #url = None
         myJSON = None
         doLocal = None
         spURL = None
@@ -261,20 +227,17 @@ class AWSPricing:
         # END VARIABLE DECLARATION 
 
         spURL = self.getOfferIndexURL()     # gets the current savings plan URL, which is an index of all the regions' savings plan URLs
-        doLocal = False                      # set to false for production
-
-        #url = pArg1
+        doLocal = False                      # set to false for production        
 
         for regionSplitLoop in range(len(pArg1.strip().split(","))):
-            #print(pArg1.split(",")[regionSplitLoop] + " , " + spURL)
             regionURL  = self.getSavingsPlanPriceListUrlForRegion(pArg1.strip().split(",")[regionSplitLoop], spURL)
-            #print(regionURL)
             
             if (doLocal == False):
+                print(regionURL)
                 contents  = urllib.request.urlopen(regionURL).read() 
-                myJSON = json.loads(contents)          # for production - use actual web url (slower)        
+                myJSON = json.loads(contents)          # for production - use actual web url (slower)                    
             elif (doLocal == True):
-                with open('CMH.json') as json_file: 
+                with open('CMH.json') as json_file:         
                     myJSON = json.load(json_file)
             
             # this loop to get the sku that corresponds with 3yr All Upfront ComputeSavingsPlan
@@ -291,7 +254,7 @@ class AWSPricing:
 
             # find the price by rateCode - ie. "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
             for x in range(len(pArg2)):
-                #print(pArg2[x].sku)
+                print("getSavingsPlanPrices2: [" + pArg2[x].regionCode + " ]: " + pArg2[x].sku + ", os: " + pArg2[x].os + ", " + pArg2[x].instanceFamily + "." + pArg2[x].instanceSize)
                 for item in foundRateList:
                     if (item['rateCode'] == productSku + '.' + pArg2[x].sku):
                         pArg2[x].price = item['discountedRate']['price']
@@ -372,7 +335,7 @@ if __name__ == '__main__':
     # NEEDS WORK: DUB, PDX, SIN, IAD, GRU, NRT don't work  <-- need to figure out global prices
     # WORKS: CMH,LHR,FRA
 
-    regionsArg = "CMH,LHR,FRA"                          # comma separated list of regions by airport code 
+    regionsArg = "IAD"                          # comma separated list of regions by airport code 
     
     myObj = AWSPricing()                            # object instantiation
     
