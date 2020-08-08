@@ -1,5 +1,5 @@
 # aws_prices
-For purposes of fetching AWS pricing related to 3Y All Upfront Compute Savings Plan
+Fetching AWS price quotes related to 3Y All Upfront Compute Savings Plan with output in an Excel file.
 
 ### Installation
 ```
