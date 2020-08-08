@@ -16,8 +16,8 @@ python3 index.py
 Python script will create an Excel file with `.xlsx` file extension with the Savings Plan quotes
 
 ### Dependencies
-Script relies up on `xlsxwriter`
-This is for writing to Excel workbook.
+Script relies up on `xlsxwriter`  
+This is for writing to Excel workbook.  
 To install use  
 ```
 pip3 install xlsxwriter

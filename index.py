@@ -1,13 +1,8 @@
-#from datetime import datetime, date,time
-#from datetime import timezone       # use python3
 import re                           # for regular expression, to parse out instance size from instanceType attribute
-#import calendar                     # need this module for last day of month
 import json                         # need this library to interact with JSON data structures
 import urllib.request               # need this library to open up remote website (ie. controltower)
 import xlsxwriter                   # pip3 install xlsxwriter   , xlwt doesn't support .xlsx
 from operator import itemgetter, attrgetter # https://docs.python.org/3/howto/sorting.html
-#from dateutil.relativedelta import relativedelta    # pip3 install python-dateutil
-
 
 class SKUClass:
     def __init__(self,pFam,pSize, pRegionCode, pSKU, pOS):
@@ -16,7 +11,6 @@ class SKUClass:
         self.regionCode = pRegionCode
         self.sku = pSKU
         self.os = pOS
-        #self.
     
 #########################################################################################
 # offer index file: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json
@@ -127,10 +121,8 @@ class AWSPricing:
 
         
         url = self.ROOT_URL + versionUrlPath
-        retvalue = url#print(url)
-        #contents  = urllib.request.urlopen(url).read() 
-        #myJSON = json.loads(contents)
-
+        retvalue = url
+        
         return retvalue
    
     #######################################################################
@@ -157,20 +149,8 @@ class AWSPricing:
             contents  = urllib.request.urlopen(url).read() 
             myJSON = json.loads(contents)
             retvalue = (myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]).strip()
-
             
-        #print(len(myJSON["products"]))
         counter = 0
-
-        # this loop to get the sku that corresponds with 3yr All Upfront ComputeSavingsPlan
-        #for key,value in myJSON["products"].items():    
-         #   print(value["usageType"])
-            #if (value["usageType"] == "ComputeSP:3yrAllUpfront" and value["productFamily"] == "ComputeSavingsPlans"):
-            #    productSku = value["sku"]
-            #    break
-
-
-
 
         for key,value in myJSON["products"].items():    
             pattern = "^[A-Z]+[0-9]+\-BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
@@ -198,9 +178,7 @@ class AWSPricing:
                                             , value["attributes"]["operatingSystem"]))
         
         my_list = sorted(my_list, key=attrgetter('instanceFamily','instanceSize'))
-        #for x in range(len(my_list)):
-        #    print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
-        #    print(productSku)
+
         return my_list
 
     ##############################################################
@@ -258,16 +236,6 @@ class AWSPricing:
                     #print(item['rateCode'] + ": " + pArg2[x].price + ", " + pArg2[x].instanceFamily + ", " + pArg2[x].instanceSize+ ", " + pArg2[x].os)
                     break
         return pArg2
-        #  write to Excel
-        #for x in range(len(pArg2)):
-        
-            #print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
-            #print(productSku)
-        #for key,value in myJSON["products"].items():    
-        #    pattern = "^[A-Z]+[0-9]+\-BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
-        #    if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
-        #        and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
-        #        and value["attributes"]["preInstalledSw"] == "NA"
 
     ##############################################################
     #  @pArg1 the list of SKUClass objects
@@ -282,7 +250,7 @@ class AWSPricing:
         #####################################
         # write headers in row 1
         #####################################
-        sheet1.write_string('A1','Region Code')
+        sheet1.write_string('A1','RegionCode')
         sheet1.write_string('B1','Region')
         sheet1.write_string('C1','Location')
         sheet1.write_string('D1','OS')
@@ -290,6 +258,9 @@ class AWSPricing:
         sheet1.write_string('F1','Size')
         sheet1.write_string('G1','rateCode')
         sheet1.write_string('H1','price')
+
+        sheet1.set_column('B:C',14)
+        sheet1.set_column('G:G',43)
 
         for x in range(len(pArg1)):
             sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
@@ -303,7 +274,6 @@ class AWSPricing:
             counter = counter + 1
 
         book.close()    # close the excel file
-
 
 ############################################
 # MAIN CODE EXECUTION BEGIN
@@ -321,9 +291,5 @@ if __name__ == '__main__':
 
     myObj.doWriteExcel(listArr)
 
-    #print(regionURL)
 
-
-# generic:  "usageType" : "ComputeSP:3yrAllUpfront", , get the "sku" , ["attributes"]["location"]="Any",
-# "usageType" : "USE2-EC2SP:c4.3yrAllUpfront",  get the "sku" , also ["attributes"]["location"]="US East (Ohio)", ["attributes"]["instanceType"]="c4"
     
