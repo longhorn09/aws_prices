@@ -203,7 +203,7 @@ class AWSPricing:
         doLocal = None
         # END VARIABLE DECLARATION 
 
-        doLocal = True          # set to false for production
+        doLocal = False          # set to false for production
 
         url = pArg1
 

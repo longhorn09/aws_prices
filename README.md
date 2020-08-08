@@ -17,12 +17,23 @@ Python script will create an Excel file with `.xlsx` file extension with the Sav
 
 ### Dependencies
 Script relies up on `xlsxwriter`  
-This is for writing to Excel workbook.  
-To install use  
+This is for writing to Excel workbook. To install use `pip3` as shown below
 ```
 pip3 install xlsxwriter
 ```
+### Performance tweaks
+Each regional savings plan URL ranges from 40~70 MB.  
+The list of EC2 offers is roughly 1.3GB. Even over gigabit fiber connections, it can take a while to download/read.  
+Because of this, if repeatedly running this script, save the 1.3GB JSON file locally, and toggle within the `getSKUListLocal` function and tweak the file name accordingly.
 
+```
+doLocal = True  # toggle
+
+if (doLocal):
+    # this is a 1.3 GB file - may take time
+    with open('index_aws_ec2.json') as json_file: 
+        myJSON = json.load(json_file)   
+```
 
 ### Reference links 
 
