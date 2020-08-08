@@ -39,4 +39,8 @@ if (doLocal):
 
 [AWS Bulk API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-ppslong.html)  
 [Savings plan offer file](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/sp-offer-file.html)  
-[JSON Editor online](https://jsoneditoronline.org/#left=url.https%3A%2F%2Fpricing.us-east-1.amazonaws.com%2FsavingsPlan%2Fv1.0%2Faws%2FAWSComputeSavingsPlan%2F20200806153551%2Fus-east-2%2Findex.json)
+[JSON Editor online](https://jsoneditoronline.org/#left=url.https%3A%2F%2Fpricing.us-east-1.amazonaws.com%2FsavingsPlan%2Fv1.0%2Faws%2FAWSComputeSavingsPlan%2F20200806153551%2Fus-east-2%2Findex.json)  
+[AmazonEC2.currentVersionUrl (1.3GB)](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/index.json)  
+[AmazonEC2.currentRegionIndexUrl ](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/region_index.json)  
+[AmazonEC2.currentSavingsPlanIndexUrl ](https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json)  
+  
