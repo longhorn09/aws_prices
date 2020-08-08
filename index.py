@@ -137,7 +137,7 @@ class AWSPricing:
         doLocal = None
         #productSku = None        
 
-        doLocal = True  # True for Dev , false for Prod
+        doLocal = False  # True for Dev , false for Prod
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
@@ -148,7 +148,10 @@ class AWSPricing:
             url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
             contents  = urllib.request.urlopen(url).read() 
             myJSON = json.loads(contents)
-            retvalue = (myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]).strip()
+            #retvalue = (myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]).strip()
+            url = self.ROOT_URL + myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]
+            contents  = urllib.request.urlopen(url).read() 
+            myJSON = json.loads(contents)
             
         #counter = 0
 
@@ -342,6 +345,23 @@ class AWSPricing:
         for x in range(len(regionArr)):
             print(regionArr[x])
 
+    #######################################################
+    # run this once to create a local copy of large 1.3GB JSON file
+    #######################################################
+    def doSaveJSONLocal(self):
+        url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
+        contents  = urllib.request.urlopen(url).read() 
+        myJSON = json.loads(contents)
+
+        url = self.ROOT_URL + myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]
+        contents  = urllib.request.urlopen(url).read() 
+        myJSON = json.loads(contents)
+
+        with open('index_aws_ec2.json','w') as outfile:
+            json.dump(myJSON, outfile)
+            outfile.close()
+        
+         
 ############################################
 # MAIN CODE EXECUTION BEGIN
 ############################################
@@ -356,13 +376,12 @@ if __name__ == '__main__':
     
     myObj = AWSPricing()                            # object instantiation
     
-    listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1.3GB JSON, to get the appropriate product SKUs for a region
-    
-    #regionURL = myObj.getSavingsPlanPriceListUrlForRegion('CMH', spURL)    # this just gets the appropriate savings plan url for a region
+    listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1.3GB JSON, to get the appropriate product SKUs for a region    
     
     listArr = myObj.getSavingsPlanPrices2(regionsArg, listArr)
     myObj.doWriteExcel(listArr)
-
+    
+    #myObj.doSaveJSONLocal()
 
 
 
