@@ -257,9 +257,9 @@ class AWSPricing:
                     pArg2[x].rateCode = item['rateCode']
                     #print(item['rateCode'] + ": " + pArg2[x].price + ", " + pArg2[x].instanceFamily + ", " + pArg2[x].instanceSize+ ", " + pArg2[x].os)
                     break
-        
+        return pArg2
         #  write to Excel
-        for x in range(len(pArg2)):
+        #for x in range(len(pArg2)):
         
             #print(my_list[x].sku + ", " + my_list[x].instanceFamily + "." + my_list[x].instanceSize + ", OS: " + my_list[x].os + ", region: " +  my_list[x].regionCode)
             #print(productSku)
@@ -268,6 +268,42 @@ class AWSPricing:
         #    if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
         #        and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
         #        and value["attributes"]["preInstalledSw"] == "NA"
+
+    ##############################################################
+    #  @pArg1 the list of SKUClass objects
+    ##############################################################
+    def doWriteExcel(self,pArg1):
+        counter = 2
+        book = xlsxwriter.Workbook('sp_prices.xlsx')
+        sheet1 = book.add_worksheet('prices')
+
+
+        money = book.add_format({'num_format': '#,##0.0000'})   # https://xlsxwriter.readthedocs.io/tutorial02.html
+        #####################################
+        # write headers in row 1
+        #####################################
+        sheet1.write_string('A1','Region Code')
+        sheet1.write_string('B1','Region')
+        sheet1.write_string('C1','Location')
+        sheet1.write_string('D1','OS')
+        sheet1.write_string('E1','InstanceFamily')
+        sheet1.write_string('F1','Size')
+        sheet1.write_string('G1','rateCode')
+        sheet1.write_string('H1','price')
+
+        for x in range(len(pArg1)):
+            sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
+            sheet1.write_string('B' + str(counter), self.getAWSRegionFromCode(pArg1[x].regionCode))
+            sheet1.write_string('C' + str(counter), self.getAWSLocationFromCode(pArg1[x].regionCode))
+            sheet1.write_string('D' + str(counter), pArg1[x].os)
+            sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
+            sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
+            sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
+            sheet1.write_string('H' + str(counter), pArg1[x].price,money)
+            counter = counter + 1
+
+        book.close()    # close the excel file
+
 
 ############################################
 # MAIN CODE EXECUTION BEGIN
@@ -281,7 +317,10 @@ if __name__ == '__main__':
     
     listArr = myObj.getSKUListLocal("CMH")      # loop thru the big 1.3GB JSON, to get the appropriate product SKUs for a region
     regionURL = myObj.getSavingsPlanPriceListUrlForRegion('CMH', spURL)    # this just gets the appropriate savings plan url for a region
-    myObj.getSavingsPlanPrices(regionURL, listArr)
+    listArr = myObj.getSavingsPlanPrices(regionURL, listArr)
+
+    myObj.doWriteExcel(listArr)
+
     #print(regionURL)
 
 
