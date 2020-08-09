@@ -140,7 +140,7 @@ class AWSPricing:
         # [FASTER, stale  ] Toggle doLocal to True if JSON already saved locally as index_aws_ec2.json, can use doSaveJSONLocal() for initial save
         # [SLOWER, fresher] Toggle doLocal to False to pull from AWS site - this is a 1GB+ sized read
         ############################################
-        doLocal = False  # True for Dev , false for Prod
+        doLocal = True  # True for Dev , false for Prod
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
@@ -170,7 +170,7 @@ class AWSPricing:
                 if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
                     and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
                     and value["attributes"]["preInstalledSw"] == "NA"
-                    and value["attributes"]["instanceFamily"] == "General purpose"
+                    #and value["attributes"]["instanceFamily"] == "General purpose"
                     and value["attributes"]["locationType"] == "AWS Region"
                     and value["attributes"]["tenancy"] == "Shared"
                     and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
@@ -189,6 +189,7 @@ class AWSPricing:
                                                 , value["attributes"]["operatingSystem"]
                                                 , value["attributes"]["usagetype"])
                                       )
+                        
                 """
                 # this block of code for development debugging
                 else:
@@ -347,6 +348,7 @@ if __name__ == '__main__':
 
     #regionsArg = "CMH,LHR,FRA"
     regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB"
+    #regionsArg = "IAD,CMH"
     #regionsArg = "DUB"                          # comma separated list of regions by airport code 
     
     myObj = AWSPricing()                            # object instantiation
