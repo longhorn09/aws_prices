@@ -5,7 +5,7 @@ import xlsxwriter                   # pip3 install xlsxwriter   , xlwt doesn't s
 from operator import itemgetter, attrgetter # https://docs.python.org/3/howto/sorting.html
 
 class SKUClass:
-    def __init__(self,pFam,pSize, pRegionCode, pSKU, pOS):
+    def __init__(self,pFam,pSize, pRegionCode, pSKU, pOS,pUsageType):
         self.instanceFamily = pFam
         self.instanceSize = pSize
         self.regionCode = pRegionCode
@@ -13,6 +13,7 @@ class SKUClass:
         self.os = pOS
         self.rateCode = ''
         self.price = 0
+        self.usageType = pUsageType
     
 #########################################################################################
 # offer index file: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json
@@ -33,15 +34,14 @@ class AWSPricing:
         url = None
         contents = None
         myJSON = None
+        ## end of variable declaration
 
-        # simply lookup "AmazonEC2"   , then "currentSavingsPlanIndexUrl"
-        url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
+        url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'          # simply lookup "AmazonEC2"   , then "currentSavingsPlanIndexUrl"
 
         contents  = urllib.request.urlopen(url).read() 
         myJSON = json.loads(contents)
         retvalue = (myJSON["offers"]["AmazonEC2"]["currentSavingsPlanIndexUrl"]).strip()    #ie. https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json
 
-        #print(retvalue)
         return retvalue
 
     #######################################################################
@@ -162,9 +162,11 @@ class AWSPricing:
             #print(regionArr[x] + ': ' + self.getAWSLocationFromCode(regionArr[x]))
             for key,value in myJSON["products"].items():    
                 # regex pattern for ["attributes"]["usagetype"] can be:
+                # EU-EC2SP:r4.1yrAllUpfront
+                # EU-BoxUsage:m5.8xlarge
                 # EUW2-BoxUsage:m5d.xlarge
                 # BoxUsage:m5d.xlarge
-                pattern = "^([A-Z]+[0-9]+\-)?BoxUsage.+$"      # make sure BoxUsage, not UnusedBox etc
+                pattern = "^([A-Z0-9\-]+)?BoxUsage:.+$"      # make sure BoxUsage, not UnusedBox etc
                 if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
                     and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
                     and value["attributes"]["preInstalledSw"] == "NA"
@@ -173,7 +175,7 @@ class AWSPricing:
                     and value["attributes"]["tenancy"] == "Shared"
                     and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
                     and re.match(pattern,value["attributes"]["usagetype"])):
-
+                    #print("yCount: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"] + ", usageType:" + value["attributes"]["usagetype"])
                     pattern = "^(.+)\.([0-9A-Za-z]+)$"
                     if ("instanceType" in value["attributes"] and re.match(pattern,value["attributes"]["instanceType"])):
                         m = re.search(pattern, value["attributes"]["instanceType"])
@@ -184,7 +186,9 @@ class AWSPricing:
                                                 , m.group(2)   
                                                 , regionArr[x] #pRegionCode
                                                 , key  
-                                                , value["attributes"]["operatingSystem"]))
+                                                , value["attributes"]["operatingSystem"]
+                                                , value["attributes"]["usagetype"])
+                                      )
                 """
                 # this block of code for development debugging
                 else:
@@ -237,7 +241,7 @@ class AWSPricing:
             regionURL  = self.getSavingsPlanPriceListUrlForRegion(pArg1.strip().split(",")[regionSplitLoop], spURL)
             
             if (doLocal == False):
-                print(regionURL)
+                print('[' + pArg1.strip().split(",")[regionSplitLoop] + '] ' + regionURL)
                 contents  = urllib.request.urlopen(regionURL).read() 
                 myJSON = json.loads(contents)          # for production - use actual web url (slower)                    
             elif (doLocal == True):
@@ -254,11 +258,11 @@ class AWSPricing:
             for item in myJSON["terms"]["savingsPlan"]:
                 if (item["sku"] ==  productSku):
                     foundRateList = item["rates"]                    
-                    break;
+                    break
 
             # find the price by rateCode - ie. "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
             for x in range(len(pArg2)):
-                print("getSavingsPlanPrices2: [" + pArg2[x].regionCode + "]: " + pArg2[x].sku + ", os: " + pArg2[x].os + ", " + pArg2[x].instanceFamily + "." + pArg2[x].instanceSize)
+                #print("getSavingsPlanPrices2: [" + pArg2[x].regionCode + "]: " + pArg2[x].sku + ", os: " + pArg2[x].os + ", " + pArg2[x].instanceFamily + "." + pArg2[x].instanceSize)
                 for item in foundRateList:
                     if (item['rateCode'] == productSku + '.' + pArg2[x].sku):
                         pArg2[x].price = item['discountedRate']['price']
@@ -287,7 +291,8 @@ class AWSPricing:
         sheet1.write_string('E1','InstanceFamily')
         sheet1.write_string('F1','Size')
         sheet1.write_string('G1','rateCode')
-        sheet1.write_string('H1','price')
+        sheet1.write_string('H1','usageType')
+        sheet1.write_string('I1','price')
 
         sheet1.set_column('B:C',14)
         sheet1.set_column('G:G',43)
@@ -300,7 +305,8 @@ class AWSPricing:
             sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
             sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
             sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
-            sheet1.write_number('H' + str(counter), float(pArg1[x].price),money)
+            sheet1.write_string('H' + str(counter), pArg1[x].usageType)
+            sheet1.write_number('I' + str(counter), float(pArg1[x].price),money)
             counter = counter + 1
 
         book.close()    # close the excel file
@@ -336,13 +342,11 @@ if __name__ == '__main__':
     listArr = []
     regionURL = None
 
-    # NEEDS WORK: DUB, NRT don't work  <-- need to figure out global prices
-    
     # WORKS with no blanks: CMH,LHR,FRA
-    # WORKS but BLANKS    : IAD,PDX,SIN,GRU,NRT  , some reason dupe blanks for Windows m1.large, m1.medium, and m1.xlarge 
-    # DOESN'T WORK        : DUB
+    # WORKS but BLANKS    : IAD,PDX,SIN,GRU,NRT,DUB  --> some reason dupe blanks for Windows m1.large, m1.medium, and m1.xlarge 
 
-    regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT"
+    #regionsArg = "CMH,LHR,FRA"
+    regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB"
     #regionsArg = "DUB"                          # comma separated list of regions by airport code 
     
     myObj = AWSPricing()                            # object instantiation
