@@ -140,7 +140,7 @@ class AWSPricing:
         # [FASTER, stale  ] Toggle doLocal to True if JSON already saved locally as index_aws_ec2.json, can use doSaveJSONLocal() for initial save
         # [SLOWER, fresher] Toggle doLocal to False to pull from AWS site - this is a 1GB+ sized read
         ############################################
-        doLocal = True  # True for Dev , false for Prod
+        doLocal = False  # True for Dev , false for Prod
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
@@ -156,8 +156,7 @@ class AWSPricing:
             myJSON = json.loads(contents)
             
         regionArr = pRegionCodeCSV.split(",")
-        #yCount = 0
-        #nCount = 0
+
         for x in range(len(regionArr)):         
             #print(regionArr[x] + ': ' + self.getAWSLocationFromCode(regionArr[x]))
             for key,value in myJSON["products"].items():    
@@ -189,25 +188,7 @@ class AWSPricing:
                                                 , value["attributes"]["operatingSystem"]
                                                 , value["attributes"]["usagetype"])
                                       )
-                        
-                """
-                # this block of code for development debugging
-                else:
-                    if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
-                        and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
-                        and value["attributes"]["preInstalledSw"] == "NA"
-                        and value["attributes"]["instanceFamily"] == "General purpose"
-                        and value["attributes"]["locationType"] == "AWS Region"
-                        and value["attributes"]["tenancy"] == "Shared"
-                        and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
-                        and re.match(pattern,value["attributes"]["usagetype"])
-                        ):
-                        print("yCount: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"] + ", usageType:" + value["attributes"]["usagetype"])
-                        yCount = yCount + 1
-                    else:                        
-                        nCount = nCount + 1
-                """    
-        #print("yep: " + str(yCount) + ", nope: " + str(nCount))
+
         my_list = sorted(my_list, key=attrgetter('regionCode','instanceFamily','instanceSize'))
 
         return my_list
@@ -278,6 +259,8 @@ class AWSPricing:
     ##############################################################
     def doWriteExcel(self,pArg1):
         counter = 2
+        blankCount = 0
+
         book = xlsxwriter.Workbook('sp_prices.xlsx')
         sheet1 = book.add_worksheet('prices')
         
@@ -299,28 +282,24 @@ class AWSPricing:
         sheet1.set_column('G:G',43)
 
         for x in range(len(pArg1)):
-            sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
-            sheet1.write_string('B' + str(counter), self.getAWSRegionFromCode(pArg1[x].regionCode))
-            sheet1.write_string('C' + str(counter), self.getAWSLocationFromCode(pArg1[x].regionCode))
-            sheet1.write_string('D' + str(counter), pArg1[x].os)
-            sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
-            sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
-            sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
-            sheet1.write_string('H' + str(counter), pArg1[x].usageType)
-            sheet1.write_number('I' + str(counter), float(pArg1[x].price),money)
-            counter = counter + 1
-
+            if (float(pArg1[x].price) > 0):
+                sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
+                sheet1.write_string('B' + str(counter), self.getAWSRegionFromCode(pArg1[x].regionCode))
+                sheet1.write_string('C' + str(counter), self.getAWSLocationFromCode(pArg1[x].regionCode))
+                sheet1.write_string('D' + str(counter), pArg1[x].os)
+                sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
+                sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
+                sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
+                sheet1.write_string('H' + str(counter), pArg1[x].usageType)
+                sheet1.write_number('I' + str(counter), float(pArg1[x].price),money)
+                counter += 1       # this increments the Excel output row 
+            else:
+                blankCount += 1
+        print('blankCount (https://github.com/longhorn09/aws_prices/issues/1): ' + str(blankCount))
         book.close()    # close the excel file
     
-    # just getting familiar with python's split() function behavior
-    def basicTest(self, pArg1):
-        txt = pArg1
-        regionArr = txt.split(",")
-        for x in range(len(regionArr)):
-            print(regionArr[x])
-
     #######################################################
-    # run this once to create a local copy of large 1.3GB JSON file
+    # Run this once to create a local copy of large 1.3GB JSON file for local development and testing purposes
     #######################################################
     def doSaveJSONLocal(self):
         url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
@@ -343,14 +322,9 @@ if __name__ == '__main__':
     listArr = []
     regionURL = None
 
-    # WORKS with no blanks: CMH,LHR,FRA
-    # WORKS but BLANKS    : IAD,PDX,SIN,GRU,NRT,DUB  --> some reason dupe blanks for Windows m1.large, m1.medium, and m1.xlarge 
-
-    #regionsArg = "CMH,LHR,FRA"
     regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB"
-    #regionsArg = "IAD,CMH"
-    #regionsArg = "DUB"                          # comma separated list of regions by airport code 
-    
+    #regionsArg = "IAD"
+        
     myObj = AWSPricing()                            # object instantiation
     
     listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1.3GB JSON, to get the appropriate product SKUs for a region    
@@ -358,8 +332,5 @@ if __name__ == '__main__':
     listArr = myObj.getSavingsPlanPrices2(regionsArg, listArr)
     myObj.doWriteExcel(listArr)
     
+    # do this once to save a 1GB JSON locally for local development
     #myObj.doSaveJSONLocal()
-
-
-
-    
