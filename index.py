@@ -140,7 +140,7 @@ class AWSPricing:
         # [FASTER, stale  ] Toggle doLocal to True if JSON already saved locally as index_aws_ec2.json, can use doSaveJSONLocal() for initial save
         # [SLOWER, fresher] Toggle doLocal to False to pull from AWS site - this is a 1GB+ sized read
         ############################################
-        doLocal = True  # True for Dev , false for Prod
+        doLocal = False  # True for Dev , false for Prod
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
