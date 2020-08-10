@@ -56,7 +56,7 @@ When reading from [Offer index file](https://pricing.us-east-1.amazonaws.com/off
     },
 ```
 
-When looking up respective savings plan Url in [https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json](region_index.json), look to `versionUrl`
+When looking up respective savings plan Url in [region_index.json](https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json), look to `versionUrl`
 
 ```
   "regions" : [ {
