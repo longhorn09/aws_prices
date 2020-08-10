@@ -1,6 +1,6 @@
 import re                           # for regular expression, to parse out instance size from instanceType attribute
 import json                         # need this library to interact with JSON data structures
-import urllib.request               # need this library to open up remote website (ie. controltower)
+import urllib.request               # need this library to open up remote website
 import xlsxwriter                   # pip3 install xlsxwriter   , xlwt doesn't support .xlsx
 from operator import itemgetter, attrgetter # https://docs.python.org/3/howto/sorting.html
 
