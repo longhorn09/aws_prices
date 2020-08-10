@@ -261,59 +261,68 @@ class AWSPricing:
         counter = 2
         blankCount = 0
 
-        book = xlsxwriter.Workbook('sp_prices.xlsx')
-        sheet1 = book.add_worksheet('prices')
-        
-        money = book.add_format({'num_format': '#,##0.0000'})   # https://xlsxwriter.readthedocs.io/tutorial02.html
-        #####################################
-        # write headers in row 1
-        #####################################
-        sheet1.write_string('A1','RegionCode')
-        sheet1.write_string('B1','Region')
-        sheet1.write_string('C1','Location')
-        sheet1.write_string('D1','OS')
-        sheet1.write_string('E1','InstanceFamily')
-        sheet1.write_string('F1','Size')
-        sheet1.write_string('G1','rateCode')
-        sheet1.write_string('H1','usageType')
-        sheet1.write_string('I1','price')
+        try:
+            book = xlsxwriter.Workbook('sp_prices.xlsx')
+            sheet1 = book.add_worksheet('prices')
+            
+            money = book.add_format({'num_format': '#,##0.0000'})   # https://xlsxwriter.readthedocs.io/tutorial02.html
+            #####################################
+            # write headers in row 1
+            #####################################
+            sheet1.write_string('A1','RegionCode')
+            sheet1.write_string('B1','Region')
+            sheet1.write_string('C1','Location')
+            sheet1.write_string('D1','OS')
+            sheet1.write_string('E1','InstanceFamily')
+            sheet1.write_string('F1','Size')
+            sheet1.write_string('G1','rateCode')
+            sheet1.write_string('H1','usageType')
+            sheet1.write_string('I1','price')
 
-        sheet1.set_column('B:C',14)
-        sheet1.set_column('G:G',43)
+            sheet1.set_column('B:C',14)
+            sheet1.set_column('G:G',43)
 
-        for x in range(len(pArg1)):
-            if (float(pArg1[x].price) > 0):
-                sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
-                sheet1.write_string('B' + str(counter), self.getAWSRegionFromCode(pArg1[x].regionCode))
-                sheet1.write_string('C' + str(counter), self.getAWSLocationFromCode(pArg1[x].regionCode))
-                sheet1.write_string('D' + str(counter), pArg1[x].os)
-                sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
-                sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
-                sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
-                sheet1.write_string('H' + str(counter), pArg1[x].usageType)
-                sheet1.write_number('I' + str(counter), float(pArg1[x].price),money)
-                counter += 1       # this increments the Excel output row 
-            else:
-                blankCount += 1
-        print('blankCount (https://github.com/longhorn09/aws_prices/issues/1): ' + str(blankCount))
-        book.close()    # close the excel file
-    
+            for x in range(len(pArg1)):
+                if (float(pArg1[x].price) > 0):
+                    sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
+                    sheet1.write_string('B' + str(counter), self.getAWSRegionFromCode(pArg1[x].regionCode))
+                    sheet1.write_string('C' + str(counter), self.getAWSLocationFromCode(pArg1[x].regionCode))
+                    sheet1.write_string('D' + str(counter), pArg1[x].os)
+                    sheet1.write_string('E' + str(counter), pArg1[x].instanceFamily)
+                    sheet1.write_string('F' + str(counter), pArg1[x].instanceSize)
+                    sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
+                    sheet1.write_string('H' + str(counter), pArg1[x].usageType)
+                    sheet1.write_number('I' + str(counter), float(pArg1[x].price),money)
+                    counter += 1       # this increments the Excel output row 
+                else:
+                    blankCount += 1
+            print('blankCount (https://github.com/longhorn09/aws_prices/issues/1): ' + str(blankCount))
+            book.close()    # close the excel file
+        except:
+            print("doWriteExcel(): Error trying to write to Excel",sys.exc_info()[0],"occurred.")
     #######################################################
     # Run this once to create a local copy of large 1.3GB JSON file for local development and testing purposes
     #######################################################
     def doSaveJSONLocal(self):
         url = 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json'
-        contents  = urllib.request.urlopen(url).read() 
-        myJSON = json.loads(contents)
 
-        url = self.ROOT_URL + myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]
-        contents  = urllib.request.urlopen(url).read() 
-        myJSON = json.loads(contents)
+        try:
+            contents  = urllib.request.urlopen(url).read() 
+            myJSON = json.loads(contents)
 
-        with open('index_aws_ec2.json','w') as outfile:
-            json.dump(myJSON, outfile)
-            outfile.close()
-        
+            url = self.ROOT_URL + myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]
+            contents  = urllib.request.urlopen(url).read() 
+            myJSON = json.loads(contents)
+        except:            
+            print("doSAveJSONLocal(): Error reading JSON From AWS",sys.exc_info()[0],"occurred.")
+
+        try:
+            with open('index_aws_ec2.json','w') as outfile:
+                json.dump(myJSON, outfile)
+                outfile.close()
+        except:
+            print("doSAveJSONLocal(): Error trying to write Excel file",sys.exc_info()[0],"occurred.")
+
          
 ############################################
 # MAIN CODE EXECUTION BEGIN

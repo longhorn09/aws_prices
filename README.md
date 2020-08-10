@@ -22,7 +22,7 @@ in same folder where python script is run. Can easily filter or use `vlookup()` 
 ![Excel screenshot](https://user-images.githubusercontent.com/11417589/89704400-28320d00-d919-11ea-87a8-5fd1e06f4b66.png)
 
 ### Dependencies
-Script relies up on `xlsxwriter`  
+Script relies upon `xlsxwriter`  
 This is for writing to Excel workbook. To install use `pip3` as shown below
 ```
 pip3 install xlsxwriter
