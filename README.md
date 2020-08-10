@@ -28,7 +28,7 @@ This is for writing to Excel workbook. To install use `pip3` as shown below
 pip3 install xlsxwriter
 ```
 ### Performance tweaks
-Each regional savings plan URL ranges from 40~70 MB.  
+Each regional savings plan URL ranges from 40 MB to 0.1GB.  
 The list of EC2 offers is roughly 1.3GB. Even over gigabit fiber connections, it can take a while to download/read.  
 Because of this, if repeatedly running this script, save the 1.3GB JSON file locally, and toggle within the `getSKUListLocal` function and tweak the file name accordingly.
 
@@ -43,6 +43,28 @@ if (doLocal):
 
 
 ### JSON reference snippets
+When reading from [Offer index file](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json) for `AmazonEC2`, look to `currentVersionUrl` and `currentSavingsPlanIndexUrl`
+
+```
+    "AmazonEC2" : {
+      "offerCode" : "AmazonEC2",
+      "versionIndexUrl" : "/offers/v1.0/aws/AmazonEC2/index.json",
+      "currentVersionUrl" : "/offers/v1.0/aws/AmazonEC2/current/index.json",
+      "currentRegionIndexUrl" : "/offers/v1.0/aws/AmazonEC2/current/region_index.json",
+      "savingsPlanVersionIndexUrl" : "/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/index.json",
+      "currentSavingsPlanIndexUrl" : "/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json"
+    },
+```
+
+When looking up respective savings plan Url in [https://pricing.us-east-1.amazonaws.com/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/current/region_index.json](region_index.json), look to `versionUrl`
+
+```
+  "regions" : [ {
+    "regionCode" : "ap-south-1",
+    "versionUrl" : "/savingsPlan/v1.0/aws/AWSComputeSavingsPlan/20200806153551/ap-south-1/index.json"
+  }, {
+```    
+
 3Y Compute Savings Plan All Upfront has product sku of `RQRC4CUNT9HUG9WC`  
 ```
 {
@@ -60,6 +82,22 @@ if (doLocal):
     }
   }
 ```
+
+Once the product sku is found, then combine that with the other sku to match by `rateCode` so you can find the correct corresponding `discountedRate`
+```
+, {
+    "discountedSku" : "TBV6C3VKSXKFHHSC",
+    "discountedUsageType" : "USE2-BoxUsage:t3a.xlarge",
+    "discountedOperation" : "RunInstances",
+    "discountedServiceCode" : "AmazonEC2",
+    "rateCode" : "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC",
+    "unit" : "Hrs",
+    "discountedRate" : {
+      "price" : "0.0679",
+      "currency" : "USD"
+    }
+```
+
 
 ### Reference links 
 
