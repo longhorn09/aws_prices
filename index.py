@@ -20,6 +20,32 @@ class SKUClass:
 #########################################################################################
 class AWSPricing:
     ROOT_URL = 'https://pricing.us-east-1.amazonaws.com'
+
+    region_map={
+        "CMH": ("us-east-2", "US East (Ohio)"),
+        "IAD": ("us-east-1","US East (N. Virginia)"),
+        "PDX": ("us-west-2","US West (Oregon)"),
+
+        "CPT": ("af-south-1","Africa (Cape Town)"),
+        # APAC
+        "HKG": ("ap-east-1","Asia Pacific (Hong Kong)"),
+        "BOM": ("ap-south-1","Asia Pacific (Mumbai)"),
+        "ITM": ("ap-northeast-3","Asia Pacific (Osaka-Local)"),
+        "ICN": ("ap-northeast-2","Asia Pacific (Seoul)"),
+        "SIN": ("ap-southeast-1","Asia Pacific (Singapore)"),
+        "SYD": ("ap-southeast-2","Asia Pacific (Sydney)"),
+        "NRT": ("ap-northeast-1","Asia Pacific (Tokyo)"),
+        # EU        
+        "FRA": ("eu-central-1","EU (Frankfurt)"),
+        "DUB": ("eu-west-1", "EU (Ireland)"),
+        "LHR": ("eu-west-2","EU (London)"),
+        "MXP": ("eu-south-1","EU (Milan)"),
+        "CDG": ("eu-west-3","EU (Paris)"),
+        "ARN": ("eu-north-1","EU (Stockholm)"),
+
+        "GRU": ("sa-east-1","South America (Sao Paulo)")
+    }
+
     def __init__(self):
         super().__init__()
     
@@ -44,59 +70,14 @@ class AWSPricing:
 
         return retvalue
 
-    #######################################################################
-    # simple case statement for region lookup
-    # if missing code, append to the elif and submit pull request
-    #######################################################################
-    def getAWSRegionFromCode(self, pArg1):
-        retvalue = None
-        if pArg1 == 'CMH':  # Columbus, OH
-            retvalue = 'us-east-2'                
-        elif pArg1 == "DUB":    # Dublin, IE
-            retvalue = 'eu-west-1'
-        elif pArg1 == "FRA":    # Frankfurt, GR
-            retvalue = 'eu-central-1'
-        elif pArg1 == "GRU":    # Sao Paulo, BR
-            retvalue = 'sa-east-1'    
-        elif pArg1 == "IAD":
-            retvalue = "us-east-1"
-        elif pArg1 == "LHR":
-            retvalue = 'eu-west-2'
-        elif pArg1 == "NRT":    
-            retvalue = 'ap-northeast-1'
-        elif pArg1 == "PDX":
-            retvalue = 'us-west-2'
-        elif pArg1 == "SIN":
-            retvalue = 'ap-southeast-1'
-        elif pArg1 == "SYD":
-            retvalue = 'ap-southeast-2'        
-        return retvalue
-    #######################################################################
-    # for use with ["attributes"]["location"] in SKU JSON
-    #######################################################################
-    def getAWSLocationFromCode(self,pArg1):
-        retvalue = None
-        if pArg1 == 'CMH':  # Columbus, OH
-            retvalue = 'US East (Ohio)'                
-        elif pArg1 == "DUB":    # Dublin, IE
-            retvalue = 'EU (Ireland)'
-        elif pArg1 == "FRA":    # Frankfurt, GR
-            retvalue = 'EU (Frankfurt)'
-        elif pArg1 == "GRU":    # Sao Paulo, BR
-            retvalue = 'South America (Sao Paulo)'    
-        elif pArg1 == "IAD":
-            retvalue = "US East (N. Virginia)"
-        elif pArg1 == "LHR":
-            retvalue = 'EU (London)'    #'eu-west-2'
-        elif pArg1 == "NRT":    
-            retvalue = 'Asia Pacific (Tokyo)'   #'ap-northeast-1'
-        elif pArg1 == "PDX":
-            retvalue = 'US West (Oregon)'   #'us-west-2'
-        elif pArg1 == "SIN":
-            retvalue = 'Asia Pacific (Singapore)'   #'ap-southeast-1'
-        elif pArg1 == "SYD":
-            retvalue = 'Asia Pacific (Sydney)'  #'ap-southeast-2'        
-        return retvalue
+    # ie. for IAD this returns "us-east-1"
+    def getAWSRegionFromCode(self, pRegionCode):
+        return self.region_map.get(pRegionCode,(None,None))[0]
+    
+    # ie. for IAD this returns "US East (N. Virginia)"
+    def getAWSLocationFromCode(self,pRegionCode):
+        return self.region_map.get(pRegionCode,(None,None))[1]
+
     #######################################################################
     # URL lookup for region SP version Url
     # @pArg1 - the 3 letter region to lookup (ie. the airport code)
@@ -140,7 +121,7 @@ class AWSPricing:
         # [FASTER, stale  ] Toggle doLocal to True if JSON already saved locally as index_aws_ec2.json, can use doSaveJSONLocal() for initial save
         # [SLOWER, fresher] Toggle doLocal to False to pull from AWS site - this is a 1GB+ sized read
         ############################################
-        doLocal = False  # True for Dev , false for Prod
+        doLocal = True  # True for Dev , false for Prod
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
@@ -331,15 +312,19 @@ if __name__ == '__main__':
     listArr = []
     regionURL = None
 
+    # regionsArg expects a CSV list of 3 letter airport region codes
+    # tweak as necessary for the regions of interest
+    regionsArg = "ICN,ITM,BOM"
     regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB"
-    #regionsArg = "IAD"
-        
+
     myObj = AWSPricing()                            # object instantiation
+
+    #myObj.doSaveJSONLocal()    # do this once to save a 1GB+ JSON locally for local development
     
-    listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1.3GB JSON, to get the appropriate product SKUs for a region    
+    listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1GB+ JSON, to get the appropriate product SKUs for a region    
     
     listArr = myObj.getSavingsPlanPrices2(regionsArg, listArr)
     myObj.doWriteExcel(listArr)
     
-    # do this once to save a 1GB JSON locally for local development
-    #myObj.doSaveJSONLocal()
+    
+    
