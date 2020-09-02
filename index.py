@@ -22,10 +22,16 @@ class AWSPricing:
     ROOT_URL = 'https://pricing.us-east-1.amazonaws.com'
 
     region_map={
+        # Americas
         "CMH": ("us-east-2", "US East (Ohio)"),
         "IAD": ("us-east-1","US East (N. Virginia)"),
         "PDX": ("us-west-2","US West (Oregon)"),
+        "SFO": ("us-west-1","US West (N. California)"),
 
+        # LATAM
+        "GRU": ("sa-east-1","South America (Sao Paulo)"),
+
+        # Africa
         "CPT": ("af-south-1","Africa (Cape Town)"),
         # APAC
         "HKG": ("ap-east-1","Asia Pacific (Hong Kong)"),
@@ -41,9 +47,9 @@ class AWSPricing:
         "LHR": ("eu-west-2","EU (London)"),
         "MXP": ("eu-south-1","EU (Milan)"),
         "CDG": ("eu-west-3","EU (Paris)"),
-        "ARN": ("eu-north-1","EU (Stockholm)"),
+        "ARN": ("eu-north-1","EU (Stockholm)")
 
-        "GRU": ("sa-east-1","South America (Sao Paulo)")
+        
     }
 
     def __init__(self):
@@ -315,7 +321,7 @@ if __name__ == '__main__':
     # regionsArg expects a CSV list of 3 letter airport region codes
     # tweak as necessary for the regions of interest
     regionsArg = "ICN,ITM,BOM"
-    regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB"
+    regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB,SYD,CDG,ICN,SFO"
 
     myObj = AWSPricing()                            # object instantiation
 
