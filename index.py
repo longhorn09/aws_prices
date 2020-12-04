@@ -31,10 +31,18 @@ class AWSPricing:
         "PDX": ("us-west-2","US West (Oregon)"),
         "SFO": ("us-west-1","US West (N. California)"),
 
+        ##### us-west-2-lax-1a, us-west-2-lax-1b
+        # doesn't seem to work
+        #"LAX": ("us-west-2-lax-1a","US West (Los Angeles)"), # https://aws.amazon.com/blogs/aws/announcing-a-second-local-zone-in-los-angeles/
+
+        # Canada
+        "YYZ": ("ca-central-1","Canada (Central)"),     # Toronto Pearson International
+
         # LATAM
         "GRU": ("sa-east-1","South America (Sao Paulo)"),
 
-        # Africa
+        # ME / Africa
+        "BAH": ("me-south-1","Middle East (Bahrain)"),
         "CPT": ("af-south-1","Africa (Cape Town)"),
         # APAC
         "HKG": ("ap-east-1","Asia Pacific (Hong Kong)"),
@@ -356,8 +364,29 @@ if __name__ == '__main__':
     # regionsArg expects a CSV list of 3 letter airport region codes
     # tweak as necessary for the regions of interest
     # issues with ITM and BOM?
-    regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB,SYD,CDG,ICN,SFO"
-    #regionsArg = "LHR"
+    #regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB,SYD,CDG,ICN,SFO"
+    regionsArg = ""
+    regionsArg = regionsArg + "CMH" # US East (Ohio)
+    regionsArg = regionsArg + ",LHR" # EU (London)
+    regionsArg = regionsArg + ",FRA" # EU (Frankfurt)
+    regionsArg = regionsArg + ",IAD" # US East (N. Virginia)
+    regionsArg = regionsArg + ",PDX" # US West (Oregon)
+    regionsArg = regionsArg + ",SIN" # Asia Pacific (Singapore)
+    regionsArg = regionsArg + ",GRU" # South America (Sao Paulo)
+    regionsArg = regionsArg + ",NRT" # Asia Pacific (Tokyo)
+    regionsArg = regionsArg + ",DUB" # EU (Ireland)
+    regionsArg = regionsArg + ",SYD" # Asia Pacific (Sydney)
+    regionsArg = regionsArg + ",CDG" # EU (Paris)
+    regionsArg = regionsArg + ",ICN" # Asia Pacific (Seoul)
+    regionsArg = regionsArg + ",SFO" # US West (N. California)
+    regionsArg = regionsArg + ",CPT" # Africa (Cape Town)
+    regionsArg = regionsArg + ",MXP" # EU (Milan)
+    regionsArg = regionsArg + ",BAH" # Middle East (Bahrain)
+    regionsArg = regionsArg + ",ARN" # EU (Stockholm)
+    regionsArg = regionsArg + ",HKG" # Asia Pacific (Hong Kong)
+    regionsArg = regionsArg + ",YYZ" # Canada (Central)
+
+    #issues with LAX & ITM , ie. Local regions    
 
     myObj = AWSPricing()                            # object instantiation
 
