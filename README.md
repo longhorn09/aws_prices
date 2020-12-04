@@ -1,6 +1,6 @@
 # aws_prices
 Fetching AWS price quotes related to 3Y All Upfront Compute Savings Plan with output in an Excel file.  
-Also pulls in 1YNoUpfront Compute Savings plan as of 12/03/2020.
+Also pulls in 1yrNoUpfront Compute Savings plan as of 12/03/2020.
 
 ### Installation
 ```
