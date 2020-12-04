@@ -2,6 +2,7 @@ import re                           # for regular expression, to parse out insta
 import json                         # need this library to interact with JSON data structures
 import urllib.request               # need this library to open up remote website
 import xlsxwriter                   # pip3 install xlsxwriter   , xlwt doesn't support .xlsx
+import sys
 from operator import itemgetter, attrgetter # https://docs.python.org/3/howto/sorting.html
 
 class SKUClass:
@@ -12,8 +13,10 @@ class SKUClass:
         self.sku = pSKU
         self.os = pOS
         self.rateCode = ''
-        self.price = 0
+        self.price = 0.0
         self.usageType = pUsageType
+        self.price1yrNoUpfront = 0.0
+        self.rateCode2 = ''
     
 #########################################################################################
 # offer index file: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json
@@ -153,29 +156,31 @@ class AWSPricing:
                 # EUW2-BoxUsage:m5d.xlarge
                 # BoxUsage:m5d.xlarge
                 pattern = "^([A-Z0-9\-]+)?BoxUsage:.+$"      # make sure BoxUsage, not UnusedBox etc
-                if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
-                    and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
-                    and value["attributes"]["preInstalledSw"] == "NA"
-                    #and value["attributes"]["instanceFamily"] == "General purpose"
-                    and value["attributes"]["locationType"] == "AWS Region"
-                    and value["attributes"]["tenancy"] == "Shared"
-                    and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
-                    and re.match(pattern,value["attributes"]["usagetype"])):
-                    #print("yCount: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"] + ", usageType:" + value["attributes"]["usagetype"])
-                    pattern = "^(.+)\.([0-9A-Za-z]+)$"
-                    if ("instanceType" in value["attributes"] and re.match(pattern,value["attributes"]["instanceType"])):
-                        m = re.search(pattern, value["attributes"]["instanceType"])
-                        #if (m.group(2) == "small"):        #not all instanceFamily have size small
-                            #print (key + ": " + m.group(0))                                                
-                        #print(m.group(1)  + " " + regionArr[x] + " " + key + " " + value["attributes"]["operatingSystem"])
-                        my_list.append( SKUClass(m.group(1)
-                                                , m.group(2)   
-                                                , regionArr[x] #pRegionCode
-                                                , key  
-                                                , value["attributes"]["operatingSystem"]
-                                                , value["attributes"]["usagetype"])
-                                      )
-
+                try:
+                    if (value["productFamily"] == "Compute Instance" and value["attributes"]["servicecode"] == "AmazonEC2"
+                        and (value["attributes"]["operatingSystem"] == "Linux"  or value["attributes"]["operatingSystem"] == "RHEL"  or value["attributes"]["operatingSystem"] == "Windows")
+                        and value["attributes"]["preInstalledSw"] == "NA"
+                        #and value["attributes"]["instanceFamily"] == "General purpose"
+                        and value["attributes"]["locationType"] == "AWS Region"
+                        and value["attributes"]["tenancy"] == "Shared"
+                        and value["attributes"]["location"] == self.getAWSLocationFromCode(regionArr[x])
+                        and re.match(pattern,value["attributes"]["usagetype"])):
+                        #print("yCount: " + self.getAWSLocationFromCode(regionArr[x]) + ", sku: " + value["sku"] + ", usageType:" + value["attributes"]["usagetype"])
+                        pattern = "^(.+)\.([0-9A-Za-z]+)$"
+                        if ("instanceType" in value["attributes"] and re.match(pattern,value["attributes"]["instanceType"])):
+                            m = re.search(pattern, value["attributes"]["instanceType"])
+                            #if (m.group(2) == "small"):        #not all instanceFamily have size small
+                                #print (key + ": " + m.group(0))                                                
+                            #print(m.group(1)  + " " + regionArr[x] + " " + key + " " + value["attributes"]["operatingSystem"])
+                            my_list.append( SKUClass(m.group(1)
+                                                    , m.group(2)   
+                                                    , regionArr[x] #pRegionCode
+                                                    , key  
+                                                    , value["attributes"]["operatingSystem"]
+                                                    , value["attributes"]["usagetype"])
+                                        )
+                except: 
+                    print(key + ': no productFamily')
         my_list = sorted(my_list, key=attrgetter('regionCode','instanceFamily','instanceSize'))
 
         return my_list
@@ -201,12 +206,17 @@ class AWSPricing:
         doLocal = None
         spURL = None
         regionURL = None
+        productSku = None
+        productSku1yrNoUpfront = None
+
         # END VARIABLE DECLARATION 
 
         spURL = self.getOfferIndexURL()     # gets the current savings plan URL, which is an index of all the regions' savings plan URLs
         doLocal = False                      # set to false for production        
 
         for regionSplitLoop in range(len(pArg1.strip().split(","))):
+            productSku = None
+            productSku1yrNoUpfront = None
             regionURL  = self.getSavingsPlanPriceListUrlForRegion(pArg1.strip().split(",")[regionSplitLoop], spURL)
             
             if (doLocal == False):
@@ -218,9 +228,14 @@ class AWSPricing:
                     myJSON = json.load(json_file)
             
             # this loop to get the sku that corresponds with 3yr All Upfront ComputeSavingsPlan
+            # later also look for 1yr No upfront Compute Savings plan
             for item in myJSON["products"]:    
                 if (item["usageType"] == "ComputeSP:3yrAllUpfront" and item["productFamily"] == "ComputeSavingsPlans"):
                     productSku = item["sku"]
+                elif (item["usageType"] == "ComputeSP:1yrNoUpfront" and item["productFamily"] == "ComputeSavingsPlans"):
+                    productSku1yrNoUpfront =  item["sku"] 
+                if (productSku is not None and productSku1yrNoUpfront is not None ):
+                    #print ('productSku1yrNoUpfront: ' + productSku1yrNoUpfront)
                     break
 
             # now get the actual rates in the "terms" section of the JSON
@@ -239,6 +254,20 @@ class AWSPricing:
                         #print(item['rateCode'] + ": " + pArg2[x].price + ", " + pArg2[x].instanceFamily + ", " + pArg2[x].instanceSize+ ", " + pArg2[x].os)
                         break
             
+            ###  repeat same loops but for 1yrNoUpfront savings plan
+            for item in myJSON["terms"]["savingsPlan"]:
+                if (item["sku"] ==  productSku1yrNoUpfront):
+                    foundRateList = item["rates"]                    
+                    break
+
+            # find the price by rateCode - ie. "RQRC4CUNT9HUG9WC.TBV6C3VKSXKFHHSC"
+            for x in range(len(pArg2)):
+                for item in foundRateList:
+                    if (item['rateCode'] == productSku1yrNoUpfront + '.' + pArg2[x].sku):
+                        pArg2[x].price1yrNoUpfront = item['discountedRate']['price']
+                        pArg2[x].rateCode2 = item['rateCode']
+                        break
+
         return pArg2
 
     ##############################################################
@@ -264,7 +293,9 @@ class AWSPricing:
             sheet1.write_string('F1','Size')
             sheet1.write_string('G1','rateCode')
             sheet1.write_string('H1','usageType')
-            sheet1.write_string('I1','price')
+            sheet1.write_string('I1','3yrAllUpfront')
+            sheet1.write_string('J1','1yrNoUpfront')
+            sheet1.write_string('K1','rateCode1yrNoUpfront')
 
             sheet1.set_column('B:C',14)
             sheet1.set_column('G:G',43)
@@ -280,6 +311,9 @@ class AWSPricing:
                     sheet1.write_string('G' + str(counter), pArg1[x].rateCode)
                     sheet1.write_string('H' + str(counter), pArg1[x].usageType)
                     sheet1.write_number('I' + str(counter), float(pArg1[x].price),money)
+                    sheet1.write_number('J' + str(counter), float(pArg1[x].price1yrNoUpfront),money) #float(pArg1[x].price1yrNoUpfront),money)
+                    sheet1.write_string('K' + str(counter), pArg1[x].rateCode2)
+                    #print(pArg1[x].regionCode + ', ' + pArg1[x].os + ', ' +  pArg1[x].instanceFamily + ', ' + pArg1[x].instanceSize + ', 3yr: ' + pArg1[x].price + ', 1yr: ' + pArg1[x].price1yrNoUpfront)
                     counter += 1       # this increments the Excel output row 
                 else:
                     blankCount += 1
@@ -298,10 +332,11 @@ class AWSPricing:
             myJSON = json.loads(contents)
 
             url = self.ROOT_URL + myJSON["offers"]["AmazonEC2"]["currentVersionUrl"]
+            #print(url)
             contents  = urllib.request.urlopen(url).read() 
             myJSON = json.loads(contents)
         except:            
-            print("doSAveJSONLocal(): Error reading JSON From AWS",sys.exc_info()[0],"occurred.")
+            print("doSaveJSONLocal(): Error reading JSON From AWS",sys.exc_info()[0],"occurred.")
 
         try:
             with open('index_aws_ec2.json','w') as outfile:
@@ -320,12 +355,15 @@ if __name__ == '__main__':
 
     # regionsArg expects a CSV list of 3 letter airport region codes
     # tweak as necessary for the regions of interest
-    regionsArg = "ICN,ITM,BOM"
+    # issues with ITM and BOM?
     regionsArg = "CMH,LHR,FRA,IAD,PDX,SIN,GRU,NRT,DUB,SYD,CDG,ICN,SFO"
+    #regionsArg = "LHR"
 
     myObj = AWSPricing()                            # object instantiation
 
-    #myObj.doSaveJSONLocal()    # do this once to save a 1GB+ JSON locally for local development
+    # do this once to save a 1GB+ JSON locally for local development, and comment all lines of code after myObj.doSaveJSONLocal()
+    # for faster performance, just copy/paste the appropriate URL into your browser and save off/rename the JSON retrieved to index_aws_ec2.json
+    # myObj.doSaveJSONLocal()    
     
     listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1GB+ JSON, to get the appropriate product SKUs for a region    
     
