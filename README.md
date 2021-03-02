@@ -22,6 +22,12 @@ in same folder where python script is run. Can easily filter or use `vlookup()` 
 
 ![Excel screenshot](https://user-images.githubusercontent.com/11417589/89704400-28320d00-d919-11ea-87a8-5fd1e06f4b66.png)
 
+
+### Issues
+If the Excel file isn't created upon running the script, the likely cause is due to executing Python within WSL (Ubuntu) environment. I think there may be a hidden persmissions issue that recently surfaced that oddly doesn't trigger any error messages nor warnings.
+
+The workaround is to install Python to Windows natively and run python from the DOS prompt command line. At which point the .xlsx output file will be created. 
+
 ### Dependencies
 Script relies upon `xlsxwriter`  
 This is for writing to Excel workbook. To install use `pip3` as shown below
@@ -32,6 +38,9 @@ pip3 install xlsxwriter
 Each regional savings plan URL ranges from 40 MB to 0.1GB.  
 The list of EC2 offers is roughly 1.3GB. Even over gigabit fiber connections, it can take a while to download/read.  
 Because of this, if repeatedly running this script, save the 1.3GB JSON file locally, and toggle within the `getSKUListLocal` function and tweak the file name accordingly.
+
+These toggles are around line 142 and line 224 of the code base.
+`doLocal = True` or `doLocal = False`
 
 ```
 doLocal = True  # toggle

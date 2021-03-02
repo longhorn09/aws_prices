@@ -138,7 +138,8 @@ class AWSPricing:
         # [FASTER, stale  ] Toggle doLocal to True if JSON already saved locally as index_aws_ec2.json, can use doSaveJSONLocal() for initial save
         # [SLOWER, fresher] Toggle doLocal to False to pull from AWS site - this is a 1GB+ sized read
         ############################################
-        doLocal = True  # True for Dev , false for Prod
+        #doLocal = False  # True for Dev , false for Prod
+        doLocal = True  #  already have a 1.6GB+ JSON saved locally as index_aws_ec2.json
 
         if (doLocal):
             # this is a 1.3 GB file - may take time
@@ -307,7 +308,7 @@ class AWSPricing:
 
             sheet1.set_column('B:C',14)
             sheet1.set_column('G:G',43)
-
+            #print("len(pArg1): " + len(pArg1))
             for x in range(len(pArg1)):
                 if (float(pArg1[x].price) > 0):
                     sheet1.write_string('A' + str(counter), pArg1[x].regionCode)
@@ -351,9 +352,8 @@ class AWSPricing:
                 json.dump(myJSON, outfile)
                 outfile.close()
         except:
-            print("doSAveJSONLocal(): Error trying to write Excel file",sys.exc_info()[0],"occurred.")
+            print("doSaveJSONLocal(): Error trying to write Excel file",sys.exc_info()[0],"occurred.")
 
-         
 ############################################
 # MAIN CODE EXECUTION BEGIN
 ############################################
@@ -385,7 +385,6 @@ if __name__ == '__main__':
     regionsArg = regionsArg + ",ARN" # EU (Stockholm)
     regionsArg = regionsArg + ",HKG" # Asia Pacific (Hong Kong)
     regionsArg = regionsArg + ",YYZ" # Canada (Central)
-
     #issues with LAX & ITM , ie. Local regions    
 
     myObj = AWSPricing()                            # object instantiation
@@ -396,8 +395,7 @@ if __name__ == '__main__':
     
     listArr = myObj.getSKUListLocal(regionsArg)      # loops thru the big 1GB+ JSON, to get the appropriate product SKUs for a region    
     
-    listArr = myObj.getSavingsPlanPrices2(regionsArg, listArr)
+    listArr = myObj.getSavingsPlanPrices2(regionsArg, listArr)    
     myObj.doWriteExcel(listArr)
     
-    
-    
+
