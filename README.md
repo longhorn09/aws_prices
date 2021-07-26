@@ -26,7 +26,7 @@ in same folder where python script is run. Can easily filter or use `vlookup()` 
 ### Issues
 If the Excel file isn't created upon running the script, the likely cause is due to executing Python within WSL (Ubuntu) environment. I think there may be a hidden permissions issue that recently surfaced that oddly doesn't trigger any error messages nor warnings.
 
-The workaround is to install Python to Windows natively and run python from the DOS prompt command line. At which point the .xlsx output file will be created. 
+The workaround is to install Python to Windows natively and run python from the DOS prompt command line. At which point the `.xlsx` output file will be created. 
 
 ### Dependencies
 Script relies upon `xlsxwriter`  
